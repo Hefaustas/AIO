@@ -246,6 +246,11 @@ class Options(QtGui.QWidget):
         advanced_layout.addWidget(separators[1])
         advanced_layout.addWidget(self.fps_checkbox)
 
+        self.rpc_checkbox = QtGui.QCheckBox("Enable Discord Rich Presence", self)
+        rpc_label = QtGui.QLabel("Restart game to disable/re-enable RPC.")
+
+        advanced_layout.addWidget(self.rpc_checkbox)
+        advanced_layout.addWidget(rpc_label)
 
         self.tabs.addTab(general_tab, "General")
         self.tabs.addTab(theme_tab, "Theme")
@@ -301,7 +306,7 @@ class Options(QtGui.QWidget):
             self.run_button.setText(getControlName(ini.read_ini_int("aaio.ini", "Controls", "run", QtCore.Qt.Key_Shift)))
             
             self.fps_checkbox.setChecked(ini.read_ini_bool("aaio.ini", "General", "High FPS", True))
-
+            self.rpc_checkbox.setChecked(ini.read_ini_bool("aaio.ini", "General", "Enable RPC", True))
         else:
             self.defaultoocname.setText("")
             self.defaultshowname.setText("")
@@ -330,7 +335,7 @@ class Options(QtGui.QWidget):
             self.run_button.setText("Key_Shift")
             
             self.fps_checkbox.setChecked(True)
-        
+            self.rpc_checkbox.setChecked(True)
         self.tabs.setCurrentIndex(0)
         self.show()
     
@@ -343,7 +348,9 @@ class Options(QtGui.QWidget):
         self.inifile.set("General", "Showname", self.defaultshowname.text().toUtf8())
         self.inifile.set("General", "Theme", self.themes[self.themeview.currentRow()][0])
         self.inifile.set("General", "High FPS", str(self.fps_checkbox.isChecked()))
+        self.inifile.set("General", "Enable RPC", str(self.rpc_checkbox.isChecked()))
         self.ao_app.fps = 60 if self.fps_checkbox.isChecked() else 30
+        self.ao_app.rpc = True if self.rpc_checkbox.isChecked() else False
         for i in range(len(self.up_buttons)): self.inifile.set("Controls", "up%d" % (i+1), self.ao_app.controls["up"][i])
         for i in range(len(self.down_buttons)): self.inifile.set("Controls", "down%d" % (i+1), self.ao_app.controls["down"][i])
         for i in range(len(self.left_buttons)): self.inifile.set("Controls", "left%d" % (i+1), self.ao_app.controls["left"][i])

@@ -5,13 +5,10 @@ import lobby, game
 
 class AIOMainWindow(QtGui.QMainWindow):
     ao_app = None
-    def __init__(self, _ao_app):
+    def __init__(self, _ao_app, _discordRPC):
         super(AIOMainWindow, self).__init__()
         self.ao_app = _ao_app
-
-        # discord rpc initialization
-        self.client_id = 733627406212136961
-        self.discordRPC = DiscordRPC(self.client_id)
+        self.discordRPC = _discordRPC
 
         self.stackwidget = QtGui.QStackedWidget(self)
         self.lobbywidget = lobby.lobby(_ao_app)
@@ -30,14 +27,11 @@ class AIOMainWindow(QtGui.QMainWindow):
         self.stackwidget.setCurrentWidget(self.gamewidget)
         self.setFixedSize(size)
         self.center()
-
         # reset time and set status to 'in game'
         joined_server = self.lobbywidget.server[0]
-        print joined_server
         self.discordRPC.set_details('In Game')
         self.discordRPC.set_state(joined_server)
         self.discordRPC.reset_time()
-        print self.discordRPC.state
 
     def stopGame(self):
         self.gamewidget.stopGame()
@@ -52,14 +46,17 @@ class AIOMainWindow(QtGui.QMainWindow):
 
         # initialize discordRPC and/or change status to in lobby
         # idk why on showServers but this is called when you go to lobby (so when you load
-        # up the game or dc) therefore it works imo
-        if not self.discordRPC.initialized:
-            self.discordRPC.connect()
-        self.discordRPC.set_details('In Lobby')
-        self.discordRPC.set_state('')
-        self.discordRPC.reset_time()
-        if not self.discordRPC.running:
-            self.discordRPC.run_loop()
+        # up the game or rq) therefore it works maybe
+        if self.ao_app.rpc:
+            if not self.discordRPC.initialized:
+                self.discordRPC.connect()
+            self.discordRPC.set_details('In Lobby')
+            self.discordRPC.set_state('')
+            self.discordRPC.reset_time()
+            if not self.discordRPC.running:
+                self.discordRPC.run_loop()
+        else:
+            self.discordRPC.close()
 
     def center(self):
         frameGm = self.frameGeometry()

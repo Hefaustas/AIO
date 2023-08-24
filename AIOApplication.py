@@ -7,6 +7,7 @@ from pybass import *
 import AIOprotocol
 from game_version import GAME_VERSION
 from AIOMainWindow import AIOMainWindow
+from discordRPC import DiscordRPC
 from packing import *
 
 
@@ -23,6 +24,7 @@ class AIOApplication(QtGui.QApplication):
 	musicvol = 100
 	blipvol = 100
 	fps = 30
+	rpc = True
 	controls = {"up": [QtCore.Qt.Key_W, QtCore.Qt.Key_Up],
                 "down": [QtCore.Qt.Key_S, QtCore.Qt.Key_Down],
                 "left": [QtCore.Qt.Key_A, QtCore.Qt.Key_Left],
@@ -36,12 +38,17 @@ class AIOApplication(QtGui.QApplication):
 		self.udpthread = UDPThread()
 		self.udpthread.start()
 
+		# discord rpc initialization
+		self.client_id = 733627406212136961
+		self.discordRPC = DiscordRPC(self.client_id)
+
 		self.musicvol = ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100)
 		self.sndvol = ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100)
 		self.blipvol = ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100)
 		self.fps = 60 if ini.read_ini_bool("aaio.ini", "General", "High FPS", True) else 30
+		self.rpc = True if ini.read_ini_bool("aaio.ini", "General", "Enable RPC", True) else False
 
-		self.mainwindow = AIOMainWindow(self)
+		self.mainwindow = AIOMainWindow(self, self.discordRPC)
 		self.mainwindow.show()
 	
 	def startGame(self, player_id, defaultzone, motd, charlist, musiclist, zonelist, evidencelist):
