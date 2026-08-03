@@ -52,11 +52,37 @@ class AIOApplication(QtGui.QApplication):
 				self.defaultzoneid = i
 		self.motd = motd
 		self.charlist = charlist
+		self.char_display_names = []
+		self.char_select_names = []
+
+		# use name and tag from char.ini if available, otherwise use folder name as display name
+		for folder in charlist:
+			inipath = "data/characters/%s/char.ini" % folder
+			name = ini.read_ini(inipath, "Options", "name", folder).strip()
+			if not name:
+				name = folder
+			tag = ini.read_ini(inipath, "Options", "tag", "").strip()
+			self.char_display_names.append(name)
+			if tag:
+				self.char_select_names.append("%s (%s)" % (name, tag))
+			else:
+				self.char_select_names.append(name)
+
 		self.musiclist = musiclist
 		self.zonelist = zonelist
 		self.evidencelist = evidencelist
 		self.mainwindow.startGame()
-	
+
+	def getCharDisplayName(self, charid):
+		if 0 <= charid < len(self.char_display_names):
+			return self.char_display_names[charid]
+		return "CHAR_SELECT"
+
+	def getCharSelectName(self, charid):
+		if 0 <= charid < len(self.char_select_names):
+			return self.char_select_names[charid]
+		return "CHAR_SELECT"
+
 	def stopGame(self):
 		self.stopMusic()
 		self.tcpthread.disconnect()
