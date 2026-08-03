@@ -1364,16 +1364,31 @@ class AIOserver(object):
                             self.readbuffer, delay = buffer_read("I", self.readbuffer)
                         except struct.error:
                             continue
-                        
+
                         if not self.clients[client].ready or self.clients[client].CharID == -1:
                             continue
-                            
-                        if self.clients[client].ratelimits[1] > 0:
+
+                        now = time.time()
+                        in_burst = (now <= self.clients[client].emotesound_burst_until)
+
+                        #print "[game]", "client %d (%s, %s) sent emotesound '%s' with delay %d" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID), soundname, delay)
+
+                        if self.clients[client].ratelimits[1] > 0 and not in_burst:
                             #print "[game]", "ratelimited emotesound on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
                             continue
                         
-                        self.sendEmoteSound(client, soundname, delay)
-                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * self.tickspeed
+                        # burst window starts on first emotesound, and lasts for the duration of EmoteSoundBurstWindow
+                        # during this the client can send as many emotesounds as it wants, you can technically spam the server in bursts but
+                        # this is an alternative the hard ratelimit which kills emotesounds on emotes with more than one sfx
+
+                        # in the future I would implement a system where the client can just send up to 5 or something packets based on how many sounds are detected in char.ini
+                        # idk
+
+                        if not in_burst:
+                            self.clients[client].emotesound_burst_until = now + EmoteSoundBurstWindow
+                            self.clients[client].ratelimits[1] = EmoteSoundRateLimit * self.tickspeed
+
+                        self.sendEmoteSound(client, soundname, delay)             
                         
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientEmoteSound"):
