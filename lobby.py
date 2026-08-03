@@ -94,6 +94,7 @@ class ConnectingStatus(QtGui.QWidget):
 
 class lobby(QtGui.QWidget):
 	ao_app = None
+	server = None
 	def __init__(self, _ao_app):
 		super(lobby, self).__init__()
 		self.ao_app = _ao_app
@@ -335,6 +336,8 @@ class lobby(QtGui.QWidget):
 		port = int(server[-1])
 		self.connectingstatus.show()
 		self.ao_app.connect(ip, port)
+
+		lobby.server = server
 
 	def updateServerList(self, servers):
 		self.serverlistwidget.clear()
