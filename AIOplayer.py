@@ -30,6 +30,7 @@ class AIOplayer(object):
     use_global = True
     pingpong = 0
     unpredicted_shadow = None
+    emotesound_burst_until = 0.0
 
     def __init__(self, sock, ip, id=-1):
         self.ratelimits = [0, 0, 0, 0, 0]

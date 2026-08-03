@@ -428,8 +428,46 @@ class Character(BaseCharacter):
 			self.emotes[0].append(ini.read_ini(inipath, "Emotions", str(i+1)))
 			self.emotes[1].append(ini.read_ini_int(inipath, "Emotions", str(i+1)+"_loop", 0))
 			self.emotes[2].append(ini.read_ini(inipath, "Directions", str(i+1)).split("#"))
-			self.emotes[3].append(ini.read_ini(inipath, "SoundN", str(i+1)).split("#"))
-			self.emotes[4].append(ini.read_ini_int(inipath, "SoundT", str(i+1)))
+
+			soundn = ini.read_ini(inipath, "SoundN", str(i+1), "").strip()
+			soundt = ini.read_ini(inipath, "SoundT", str(i+1), "").strip()
+
+			'''
+			To use multiple sfx:
+			"sfx-sound,sfx-sound2" will play these sounds in sequence at their set timing
+			"sfx-sound#sfx-sound2,sfx-sound3" will play one of sound1-2 at random then sfx-sound3
+			'''
+			# parse sound files
+			sfx_steps = []
+			if soundn:
+				for step in soundn.split(","):
+					step = step.strip()
+					if not step:
+						continue
+					choices = [alt.strip() for alt in step.split("#") if alt.strip()]
+					if choices:
+						sfx_steps.append(choices)
+
+			'''
+			When using multiple sfx:
+			"0,2000" will play the first sound, then the second 2 seconds later
+			Currently sound1 will cut off prematurely if sound2 plays before it ends.
+			'''
+
+			# parse delays 
+			timing_steps = []
+			if soundt:
+				for token in soundt.split(","):
+					token = token.strip()
+					if not token:
+						continue
+					try:
+						timing_steps.append(int(token))
+					except ValueError:
+						timing_steps.append(0)
+
+			self.emotes[3].append(sfx_steps)
+			self.emotes[4].append(timing_steps)
 
 			offsets = ini.read_ini(inipath, "Emotions", str(i+1)+"_offset", "0,0").split("#")
 			offsetDict = {}
@@ -984,7 +1022,7 @@ class GameWidget(QtGui.QWidget):
 		
 
 		
-		self.aSound = ["", -1, 0] #filename, delay, zone
+		self.aSoundQueue = []  # filename, delay, zone
 		self.mychatcolor = 0
 		self.myrealization = 0
 		self.myevidence = -1
@@ -1722,8 +1760,15 @@ class GameWidget(QtGui.QWidget):
 
 	def onEmoteSound(self, contents):
 		client_id, filename, delay = contents
-		zone = 0 if not self.gameview.characters[client_id] else self.gameview.characters[client_id].zone
-		self.aSound = ["data/sounds/general/"+filename+".wav", time.time()*1000 + delay, zone]
+
+		#print "[client] emote sound: %s (delay: %d) from client %d" % (filename, delay, client_id)
+
+		# schedule sound effects with timestamps
+		zone = self.gameview.characters[client_id].zone
+		play_at = time.time() * 1000 + max(0, int(delay))
+		sound_path = "data/sounds/general/" + filename + ".wav"
+		self.aSoundQueue.append([sound_path, play_at, zone])
+		self.aSoundQueue.sort(key=lambda item: item[1])
 
 	def onEmoteRightClicked(self, ind):
 		selection = self.emotemenu.exec_(QtGui.QCursor.pos())
@@ -1743,9 +1788,20 @@ class GameWidget(QtGui.QWidget):
 		emote = self.player.emotes[0][real_ind]
 		loop = self.player.emotes[1][real_ind]
 		emotedir = self.player.emotes[2][real_ind]
-		sound = random.choice(self.player.emotes[3][real_ind])
-		sound_delay = self.player.emotes[4][real_ind]
 		
+		sfx_steps = self.player.emotes[3][real_ind]
+		timing_steps = self.player.emotes[4][real_ind]
+
+		if not isinstance(sfx_steps, list):
+			sfx_steps = []
+		elif sfx_steps and isinstance(sfx_steps[0], basestring):
+			sfx_steps = [sfx_steps]
+
+		if isinstance(timing_steps, (int, long)):
+			timing_steps = [timing_steps]
+		elif not isinstance(timing_steps, list):
+			timing_steps = []
+
 		found_dir = ""
 		for dir in emotedir:
 			if getDirection(self.player.dir_nr) == dir:
@@ -1754,17 +1810,41 @@ class GameWidget(QtGui.QWidget):
 			found_dir = getCompactDirection(self.player.dir_nr)
 
 		self.player.dir_nr = directions.index(found_dir)
-		offset = self.player.emotes[5][real_ind][found_dir] if found_dir in self.player.emotes[5][real_ind] else [0,0]
+		offset = self.player.emotes[5][real_ind][found_dir] if found_dir in self.player.emotes[5][real_ind] else [0, 0]
 
-		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
-		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
+		filename = "data/characters/" + self.ao_app.charlist[self.player.charid] + "/" + self.player.charprefix + emote + found_dir + ".gif"
+		self.player.sprite = self.ao_app.charlist[self.player.charid] + "/" + emote + found_dir + ".gif"
 
-		if sound:
+		for step_index in range(len(sfx_steps)):
+			choices = sfx_steps[step_index]
+
+			if isinstance(choices, basestring):
+				choices = [choices]
+			elif not isinstance(choices, list):
+				continue
+
+			clean_choices = [s.strip() for s in choices if s and s.strip()]
+			if not clean_choices:
+				continue
+
+			sound = random.choice(clean_choices)
+
+			if step_index < len(timing_steps):
+				try:
+					sound_delay = int(timing_steps[step_index])
+				except:
+					sound_delay = 0
+			else:
+				sound_delay = 0
+
+			if sound_delay < 0:
+				sound_delay = 0
+
 			self.onEmoteSound([self.ao_app.player_id, sound, sound_delay])
 			self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)
-		
+
 		self.player.play(filename, loop, offset)
-	
+
 	def set_emote_page(self):
 		# these two are for if a theme uses emote_toggle
 		self.showPrevEmotes = False
@@ -2040,10 +2120,18 @@ class GameWidget(QtGui.QWidget):
 			self.examiner.setPos(self.gameview.gameview.mapToScene(remapped))
 			self.examiner.show()
 		
-		if self.aSound[1] > -1 and self.aSound[2] == self.player.zone: # "An SFX, that a player makes in any area, plays everywhere, in every other and its' own area." fixed
-			if time.time()*1000 >= self.aSound[1]: # milliseconds
-				self.ao_app.playSound(self.aSound[0])
-				self.aSound[1] = -1
+		now_ms = time.time() * 1000
+		i = 0
+		while i < len(self.aSoundQueue):
+			sound_path, play_at, zone = self.aSoundQueue[i]
+
+			# dont play sfx from other zoens
+			if zone == self.player.zone and now_ms >= play_at:
+				self.ao_app.playSound(sound_path)
+				del self.aSoundQueue[i]
+				continue
+
+			i += 1
 		
 		if self.examines:
 			for examine in self.examines:

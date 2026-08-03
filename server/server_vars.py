@@ -3,6 +3,7 @@ GameVersion = "0.4" # you can modify this so that it matches the version you wan
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
 EmoteSoundRateLimit = 1 #amount of seconds to wait before allowing to use emotes with sound again
+EmoteSoundBurstWindow = 0.1 #seconds, window of time where packets can be sent after first one before the rate limit is applied, not perfect but better than no limit
 MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
 OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
