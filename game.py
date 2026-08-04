@@ -1925,7 +1925,11 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.initCharacter(player)
 		self.gameview.characters[player].changeChar(char)
 		self.gameview.characters[player].zone = zone
-	
+
+		# hide players immediately if they are in a different zone than the local player
+		if self.player and zone != self.player.zone:
+				self.gameview.characters[player].hide()
+			
 	def onPlayerDestroy(self, player):
 		if player in self.gameview.characters: self.gameview.deleteCharacter(player)
 
