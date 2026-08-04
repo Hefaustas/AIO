@@ -390,6 +390,14 @@ class Character(BaseCharacter):
 		jm.addRect(nouis)
 		return jm
 
+	def hide(self):
+		super(Character, self).hide()
+		self.playerShadow.hide()
+
+	def show(self):
+		super(Character, self).show()
+		self.playerShadow.show()
+
 	def changeChar(self, newcharid):
 		self.charid = newcharid
 		if newcharid == -1:
