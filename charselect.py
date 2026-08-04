@@ -44,7 +44,7 @@ class CharSelect(QtGui.QWidget):
 		self.scrollwidget.setMinimumSize(self.scrollwidget.size().width(), top+y_pos+64)
 	
 	def charHovered(self, ind):
-		self.charname.setText(self.ao_app.charlist[ind])
+		self.charname.setText(self.ao_app.getCharSelectName(ind))
 		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip.wav")
 	
 	def confirmChar_clicked(self, ind):
