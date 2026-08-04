@@ -174,9 +174,6 @@ class lobby(QtGui.QWidget):
 		"Attorney Investigations Online\nVersion %s\nCreated by Headshotnoby\n\nThis game is not affiliated with the original Attorney Online team.\n\nThanks to all the collaborators:\nstonedDiscord, X0men0X, Phoenix \"Nick\" Wright, Pyraq,\nand anyone else I may have forgotten." % LOBBY_VERSION)
 
 	def MSError(self, msg):
-		# if player is already in a game don't show the error message.
-		if hasattr(self.ao_app, 'mainwindow') and self.ao_app.mainwindow.gamewidget.playing:
-			return
 		QtGui.QMessageBox.critical(None, "Error connecting to master", "Failed to connect to the master server.\nCheck your antivirus, internet connection or firewall?\n\nAdditional info:\n"+msg)
 
 	""" so long, brother
