@@ -1491,7 +1491,14 @@ class GameWidget(QtGui.QWidget):
 		self.m_chatClientID = clientid
 
 		char_id = 0 if not self.gameview.characters.has_key(clientid) else self.gameview.characters[clientid].charid
-		printname = self.ao_app.charlist[char_id] + (" ["+name+"]" if self.ao_app.charlist[char_id] != name else "")
+		display_name = self.ao_app.getCharDisplayName(char_id)
+		showname = name
+
+		# treat foldername as no showname
+		if showname == self.ao_app.charlist[char_id] or showname == display_name:
+			showname = ""
+
+		printname = display_name + (" ["+showname+"]" if showname else "")
 		msg = "<b>%s:</b> %s" % (printname, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />"))
 		if evidence >= 0:
 			msg += "<br /><b>"+printname+"</b> presented an evidence: "
@@ -1523,7 +1530,7 @@ class GameWidget(QtGui.QWidget):
 		audio.sethandleattr(self.blip, BASS_ATTRIB_VOL, self.ao_app.blipvol / 100.0)
 		
 		self.chattext.clear()
-		self.chatname.setText(name)
+		self.chatname.setText(showname if showname else display_name)
 		self.chattext.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+QtGui.QColor(color).name())
 		
 		if len(self.m_chatmsg) >= 2:
@@ -1727,10 +1734,11 @@ class GameWidget(QtGui.QWidget):
 	def onExaminePacket(self, contents):
 		char_id, zone, x, y, showname = contents
 		if zone != self.player.zone: return
-		showname = showname.decode("utf-8")
-
-		printname = self.ao_app.charlist[char_id] + (" ["+showname+"]" if showname else "")
-		self.examines.append(ExamineObj(printname, x, y, self.gameview.gamescene))
+		display_name = self.ao_app.getCharDisplayName(char_id)
+		if showname == self.ao_app.charlist[char_id] or showname == display_name:
+			showname = ""
+		name = display_name + (" ["+showname+"]" if showname else "")
+		self.examines.append(ExamineObj(name, x, y, self.gameview.gamescene))
 	
 	def onExamineButton(self, clicked_inGame=False):
 		if self.examining:
@@ -1887,8 +1895,12 @@ class GameWidget(QtGui.QWidget):
 		showname = showname.decode("utf-8")
 
 		if char_id > -1:
-			name = self.ao_app.charlist[char_id] + (" ["+showname+"]" if showname else "")
-			name2 = showname if showname else self.ao_app.charlist[char_id]
+			# use display name
+			display_name = self.ao_app.getCharDisplayName(char_id)
+			if showname == self.ao_app.charlist[char_id] or showname == display_name:
+				showname = ""
+			name = display_name + (" ["+showname+"]" if showname else "")
+			name2 = showname if showname else display_name
 			self.chatlog.append("<b>%s</b> changed the music to %s" % (name, filename.replace("<", "&#60;").replace(">", "&#62;")))
 			self.broadcastObj.showText("%s played song %s" % (name2, filename))
 		else:
@@ -1950,7 +1962,7 @@ class GameWidget(QtGui.QWidget):
 					self.player.moveReal(float(x), float(y))
 					self.spawned_once = True
 
-				self.showname_input.setPlaceholderText(self.ao_app.charlist[char])
+				self.showname_input.setPlaceholderText(self.ao_app.getCharDisplayName(char))
 		else:
 			self.gameview.characters[client].changeChar(char)
 	
